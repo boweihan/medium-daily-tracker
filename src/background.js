@@ -2,7 +2,7 @@ chrome.runtime.onInstalled.addListener(function () {
   console.log("onInstalled");
 });
 
-const API_URL = "https://medium.com";
+const BASE_URL = "https://medium.com";
 
 function request(url) {
   return fetch(url, {
@@ -13,30 +13,22 @@ function request(url) {
     .then((text) => JSON.parse(text.slice(16)).payload);
 }
 
-function getTotals(url, payload) {
-  let finalUrl = `${API_URL}${url}?limit=1000`;
-  if (!payload) {
-    return request(finalUrl).then((res) => getTotals(url, res));
-  }
-  const { value, paging } = payload;
-  if (
-    payload &&
-    paging &&
-    paging.next &&
-    paging.next.to &&
-    value &&
-    value.length
-  ) {
-    finalUrl += `&to=${paging.next.to}`;
-    return request(finalUrl).then((res) => {
-      payload.value = [...payload.value, ...res.value];
-      payload.paging = res.paging;
-      return getTotals(url, payload);
-    });
-  } else {
-    console.log(payload);
-    return Promise.resolve(payload);
-  }
+function getPostIds() {
+  return request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
+    const { value } = res;
+    const postIds = value.map((post) => post.postId);
+    console.log(postIds);
+    return postIds;
+  });
 }
 
-console.log(getTotals("/me/stats"));
+function getStatsForPost(postId) {
+  return request(`${BASE_URL}/stats/${postId}/0/${Date.now()}`).then((res) => {
+    console.log(res);
+    return res;
+  });
+}
+
+getPostIds();
+getStatsForPost("1a43edb4c38e");
+getStatsForPost("624efd5a224");
