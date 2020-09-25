@@ -1,34 +1,45 @@
-chrome.runtime.onInstalled.addListener(function () {
+// constants
+const BASE_URL = "https://medium.com";
+
+// event handlers
+chrome.runtime.onInstalled.addListener(() => {
   console.log("onInstalled");
 });
 
-const BASE_URL = "https://medium.com";
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const { type } = request;
 
-function request(url) {
-  return fetch(url, {
+  switch (type) {
+    case "GET_POST_STATS":
+      getPostStats().then((res) => {
+        console.log(res);
+        sendResponse(res);
+      });
+    default:
+      return true;
+  }
+});
+
+// helpers
+const request = (url) =>
+  fetch(url, {
     credentials: "same-origin",
     headers: { accept: "application/json" },
   })
     .then((res) => res.text())
     .then((text) => JSON.parse(text.slice(16)).payload);
-}
 
-function getPostIds() {
-  return request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
+const getPostIds = () =>
+  request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
     const { value } = res;
     const postIds = value.map((post) => post.postId);
-    console.log(postIds);
     return postIds;
   });
-}
 
-function getStatsForPost(postId) {
-  return request(`${BASE_URL}/stats/${postId}/0/${Date.now()}`).then((res) => {
-    console.log(res);
-    return res;
-  });
-}
+const getStatsForPost = (postId) =>
+  request(`${BASE_URL}/stats/${postId}/0/${Date.now()}`).then((res) => res);
 
-getPostIds();
-getStatsForPost("1a43edb4c38e");
-getStatsForPost("624efd5a224");
+const getPostStats = () =>
+  getPostIds().then((postIds) =>
+    Promise.all(postIds.map((postId) => getStatsForPost(postId)))
+  );
