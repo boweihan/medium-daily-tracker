@@ -58,5 +58,6 @@ section {
   color: var(--color-blue);
 }
 
-#posts {
+.post-item {
+  list-style-type: none;
 }

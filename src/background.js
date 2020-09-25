@@ -2,25 +2,20 @@
 const BASE_URL = "https://medium.com";
 
 // event handlers
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("onInstalled");
-});
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const { type } = request;
 
   switch (type) {
     case "GET_POST_STATS":
       getPostStats().then((res) => {
-        console.log(res);
-        sendResponse(res);
+        sendResponse(processPostStats(res));
       });
     default:
       return true;
   }
 });
 
-// helpers
+// request helpers
 const request = (url) =>
   fetch(url, {
     credentials: "same-origin",
@@ -41,5 +36,70 @@ const getStatsForPost = (postId) =>
 
 const getPostStats = () =>
   getPostIds().then((postIds) =>
-    Promise.all(postIds.map((postId) => getStatsForPost(postId)))
+    Promise.all(
+      postIds.map((postId) =>
+        getStatsForPost(postId).then((stats) =>
+          aggregatePostStats(stats.value, postId)
+        )
+      )
+    )
   );
+
+// aggregation helpers
+const findPostIndex = (stats, timestamp) => {
+  for (let i = 0; i < stats.length; i++) {
+    if (stats[i].collectedAt > timestamp) {
+      return Math.max(i - 1, 0);
+    }
+  }
+  return stats.length;
+};
+
+const calculateStats = (stats, index) =>
+  stats.slice(index).reduce(
+    (a, c) => {
+      a.views += c.views;
+      a.upvotes += c.upvotes;
+      a.reads += c.reads;
+      a.claps += c.claps;
+      return a;
+    },
+    {
+      views: 0,
+      upvotes: 0,
+      reads: 0,
+      claps: 0,
+    }
+  );
+
+const aggregatePostStats = (stats, postId) => {
+  const dayInMs = 86400000;
+  const now = Date.now();
+  const day = now - dayInMs;
+  const week = now - dayInMs * 7;
+  const month = now - dayInMs * 7 * 4;
+
+  return {
+    postId,
+    stats: calculateStats(stats, findPostIndex(stats, day)),
+  };
+};
+
+const processPostStats = (posts) => {
+  posts.sort((a, b) => {
+    const viewsA = a.stats.views;
+    const viewsB = b.stats.views;
+    if (viewsA < viewsB) {
+      return -1;
+    }
+    if (viewsA > viewsB) {
+      return 1;
+    }
+    return 0;
+  });
+
+  return {
+    posts,
+    total: posts.reduce((a, c) => (a += c.stats.views), 0),
+  };
+};
