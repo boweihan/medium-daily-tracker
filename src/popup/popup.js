@@ -8,53 +8,57 @@ const setVersion = () => {
   $version.textContent = "v" + chrome.runtime.getManifest().version;
 };
 
+const createListTitle = (post) => {
+  const title = document.createElement("p");
+  const textNode = document.createTextNode(post.title);
+  title.appendChild(textNode);
+  return title;
+};
+
+const createParagraphText = (text) => {
+  const paragraph = document.createElement("p");
+  const textNode = document.createTextNode(text);
+  paragraph.appendChild(textNode);
+  return paragraph;
+};
+
+const createListMetrics = (post) => {
+  const listMetric = document.createElement("div");
+  listMetric.appendChild(createParagraphText("views: " + post.stats.views));
+  listMetric.appendChild(createParagraphText("reads: " + post.stats.reads));
+  listMetric.appendChild(createParagraphText("upvotes: " + post.stats.upvotes));
+  listMetric.appendChild(createParagraphText("claps: " + post.stats.claps));
+  return listMetric;
+};
+
+const createListItem = (post, total) => {
+  const listItem = document.createElement("li");
+  const container = document.createElement("div");
+  container.appendChild(createListTitle(post));
+  container.appendChild(createListMetrics(post));
+  listItem.appendChild(container);
+  listItem.appendChild(createListBar(post, total));
+
+  return listItem;
+};
+
+const createListBar = (post, total) => {
+  const bar = document.createElement("span");
+  const mask = document.createElement("span");
+  bar.classList.add("bar");
+  mask.classList.add("mask");
+  mask.style.left = `${Math.round((post.stats.views / total) * 100)}%`;
+  mask.style.right = 0;
+  bar.appendChild(mask);
+  return bar;
+};
+
 // fetch post statistics and display
 const appendPostListItems = (posts, total) => {
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i];
-    const listElem = document.createElement("li");
-    const listElemContainer = document.createElement("div");
-    const listElemHighlight = document.createElement("span");
-    const listElemMask = document.createElement("span");
-    const listTitle = document.createElement("p");
-    const listMetric = document.createElement("div");
-    const listViews = document.createElement("p");
-    const listReads = document.createElement("p");
-    const listUpvotes = document.createElement("p");
-    const listClaps = document.createElement("p");
-
-    const titleTextNode = document.createTextNode(post.title);
-    const viewsTextNode = document.createTextNode("views: " + post.stats.views);
-    const readsTextNode = document.createTextNode("reads: " + post.stats.reads);
-    const upvotesTextNode = document.createTextNode(
-      "upvotes: " + post.stats.upvotes
-    );
-    const clapsTextNode = document.createTextNode("claps: " + post.stats.claps);
-
-    listElemHighlight.classList.add("highlight");
-    listElemMask.classList.add("mask");
-    listElemMask.style.left = `${Math.round(
-      (post.stats.views / total) * 100
-    )}%`;
-    listElemMask.style.right = 0;
-
-    listViews.appendChild(viewsTextNode);
-    listReads.appendChild(readsTextNode);
-    listUpvotes.appendChild(upvotesTextNode);
-    listClaps.appendChild(clapsTextNode);
-
-    listMetric.appendChild(listViews);
-    listMetric.appendChild(listReads);
-    listMetric.appendChild(listUpvotes);
-    listMetric.appendChild(listClaps);
-    listTitle.appendChild(titleTextNode);
-    listElemContainer.appendChild(listTitle);
-    listElemContainer.appendChild(listMetric);
-    listElem.appendChild(listElemContainer);
-    listElem.appendChild(listElemHighlight);
-    listElem.appendChild(listElemMask);
-    fragment.appendChild(listElem);
+    fragment.appendChild(createListItem(post, total));
   }
   $posts.appendChild(fragment);
 };
