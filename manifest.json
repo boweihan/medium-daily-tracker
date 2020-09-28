@@ -1,6 +1,6 @@
 {
   "name": "Medium Daily Tracker",
-  "version": "1.0",
+  "version": "0.1.0",
   "description": "Daily Stat Tracking for Medium.com Bloggers",
   "manifest_version": 2,
   "background": {

@@ -1,6 +1,7 @@
 // dynamic elements
 const $version = document.querySelector("#version");
 const $posts = document.querySelector("#posts");
+const $spinner = document.querySelector("#spinner");
 
 // set extension version to be manifest version
 const setVersion = () => {
@@ -62,6 +63,7 @@ const setPostStats = () => {
   chrome.runtime.sendMessage({ type: "GET_POST_STATS" }, {}, (res) => {
     const { posts, total } = res;
     appendPostListItems(posts, total);
+    $spinner.style.display = "none";
   });
 };
 
