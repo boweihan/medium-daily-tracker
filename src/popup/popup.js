@@ -8,11 +8,14 @@ const setVersion = () => {
 };
 
 // fetch post statistics and display
-const appendPostListItems = (posts) => {
+const appendPostListItems = (posts, total) => {
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i];
     const listElem = document.createElement("li");
+    const listElemContainer = document.createElement("div");
+    const listElemHighlight = document.createElement("span");
+    const listElemMask = document.createElement("span");
     const listTitle = document.createElement("p");
     const listMetric = document.createElement("div");
     const listViews = document.createElement("p");
@@ -28,6 +31,13 @@ const appendPostListItems = (posts) => {
     );
     const clapsTextNode = document.createTextNode("claps: " + post.stats.claps);
 
+    listElemHighlight.classList.add("highlight");
+    listElemMask.classList.add("mask");
+    listElemMask.style.left = `${Math.round(
+      (post.stats.views / total) * 100
+    )}%`;
+    listElemMask.style.right = 0;
+
     listViews.appendChild(viewsTextNode);
     listReads.appendChild(readsTextNode);
     listUpvotes.appendChild(upvotesTextNode);
@@ -38,8 +48,11 @@ const appendPostListItems = (posts) => {
     listMetric.appendChild(listUpvotes);
     listMetric.appendChild(listClaps);
     listTitle.appendChild(titleTextNode);
-    listElem.appendChild(listTitle);
-    listElem.appendChild(listMetric);
+    listElemContainer.appendChild(listTitle);
+    listElemContainer.appendChild(listMetric);
+    listElem.appendChild(listElemContainer);
+    listElem.appendChild(listElemHighlight);
+    listElem.appendChild(listElemMask);
     fragment.appendChild(listElem);
   }
   $posts.appendChild(fragment);
@@ -48,7 +61,7 @@ const appendPostListItems = (posts) => {
 const setPostStats = () => {
   chrome.runtime.sendMessage({ type: "GET_POST_STATS" }, {}, (res) => {
     const { posts, total } = res;
-    appendPostListItems(posts);
+    appendPostListItems(posts, total);
   });
 };
 

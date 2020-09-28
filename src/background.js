@@ -16,13 +16,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // request helpers
-const request = (url) =>
-  fetch(url, {
+const request = (url) => {
+  const headers = {
     credentials: "same-origin",
     headers: { accept: "application/json" },
-  })
+  };
+  return fetch(url, headers)
     .then((res) => res.text())
     .then((text) => JSON.parse(text.slice(16)).payload);
+};
 
 const getPosts = () =>
   request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
@@ -75,8 +77,6 @@ const aggregatePostStats = (stats, post) => {
   const dayInMs = 86400000;
   const now = Date.now();
   const day = now - dayInMs;
-  const week = now - dayInMs * 7;
-  const month = now - dayInMs * 7 * 4;
 
   return {
     ...post,
