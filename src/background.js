@@ -24,22 +24,21 @@ const request = (url) =>
     .then((res) => res.text())
     .then((text) => JSON.parse(text.slice(16)).payload);
 
-const getPostIds = () =>
+const getPosts = () =>
   request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
     const { value } = res;
-    const postIds = value.map((post) => post.postId);
-    return postIds;
+    return value;
   });
 
 const getStatsForPost = (postId) =>
   request(`${BASE_URL}/stats/${postId}/0/${Date.now()}`).then((res) => res);
 
 const getPostStats = () =>
-  getPostIds().then((postIds) =>
+  getPosts().then((posts) =>
     Promise.all(
-      postIds.map((postId) =>
-        getStatsForPost(postId).then((stats) =>
-          aggregatePostStats(stats.value, postId)
+      posts.map((post) =>
+        getStatsForPost(post.postId).then((stats) =>
+          aggregatePostStats(stats.value, post)
         )
       )
     )
@@ -72,7 +71,7 @@ const calculateStats = (stats, index) =>
     }
   );
 
-const aggregatePostStats = (stats, postId) => {
+const aggregatePostStats = (stats, post) => {
   const dayInMs = 86400000;
   const now = Date.now();
   const day = now - dayInMs;
@@ -80,7 +79,7 @@ const aggregatePostStats = (stats, postId) => {
   const month = now - dayInMs * 7 * 4;
 
   return {
-    postId,
+    ...post,
     stats: calculateStats(stats, findPostIndex(stats, day)),
   };
 };
@@ -90,10 +89,10 @@ const processPostStats = (posts) => {
     const viewsA = a.stats.views;
     const viewsB = b.stats.views;
     if (viewsA < viewsB) {
-      return -1;
+      return 1;
     }
     if (viewsA > viewsB) {
-      return 1;
+      return -1;
     }
     return 0;
   });

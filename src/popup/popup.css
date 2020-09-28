@@ -42,11 +42,16 @@ section {
   margin-left: 10px;
 }
 
+#posts {
+  max-height: 300px;
+  overflow: auto;
+}
+
 #footer {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: cetner;
+  justify-content: center;
 }
 
 #footer > #handle {
@@ -58,6 +63,26 @@ section {
   color: var(--color-blue);
 }
 
-.post-item {
+li {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--color-gray);
+  margin-bottom: 10px;
   list-style-type: none;
+}
+
+li > p {
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+li > div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+li > div > p {
+  flex: 1;
+  opacity: 0.6;
 }

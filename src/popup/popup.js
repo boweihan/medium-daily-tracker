@@ -13,9 +13,33 @@ const appendPostListItems = (posts) => {
   for (let i = 0; i < posts.length; i++) {
     const post = posts[i];
     const listElem = document.createElement("li");
-    const listTextNode = document.createTextNode(post.postId);
-    listElem.appendChild(listTextNode);
-    listElem.className = "post-item";
+    const listTitle = document.createElement("p");
+    const listMetric = document.createElement("div");
+    const listViews = document.createElement("p");
+    const listReads = document.createElement("p");
+    const listUpvotes = document.createElement("p");
+    const listClaps = document.createElement("p");
+
+    const titleTextNode = document.createTextNode(post.title);
+    const viewsTextNode = document.createTextNode("views: " + post.stats.views);
+    const readsTextNode = document.createTextNode("reads: " + post.stats.reads);
+    const upvotesTextNode = document.createTextNode(
+      "upvotes: " + post.stats.upvotes
+    );
+    const clapsTextNode = document.createTextNode("claps: " + post.stats.claps);
+
+    listViews.appendChild(viewsTextNode);
+    listReads.appendChild(readsTextNode);
+    listUpvotes.appendChild(upvotesTextNode);
+    listClaps.appendChild(clapsTextNode);
+
+    listMetric.appendChild(listViews);
+    listMetric.appendChild(listReads);
+    listMetric.appendChild(listUpvotes);
+    listMetric.appendChild(listClaps);
+    listTitle.appendChild(titleTextNode);
+    listElem.appendChild(listTitle);
+    listElem.appendChild(listMetric);
     fragment.appendChild(listElem);
   }
   $posts.appendChild(fragment);
