@@ -1,53 +1,47 @@
-// constants
 const BASE_URL = "https://medium.com";
 
-// event handlers
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  const { type } = request;
-
-  switch (type) {
-    case "GET_POST_STATS":
-      getPostStats().then((res) => {
-        sendResponse(processPostStats(res));
-      });
-    default:
-      return true;
-  }
-});
-
-// request helpers
+/**
+ * Base request helper, stripping JSON hijacking characters.
+ * @param {string} url
+ */
 const request = (url) => {
   const headers = {
-    credentials: "same-origin",
     headers: { accept: "application/json" },
   };
-  return fetch(url, headers)
+  return fetch(`${BASE_URL}${url}`, headers)
     .then((res) => res.text())
     .then((text) => JSON.parse(text.slice(16)).payload);
 };
 
-const getPosts = () =>
-  request(`${BASE_URL}/me/stats?limit=1000`).then((res) => {
-    const { value } = res;
-    return value;
-  });
+/**
+ * Fetch a list of medium post metadata.
+ */
+const getPosts = () => request(`/me/stats?limit=100`).then((res) => res.value);
 
+/**
+ * Fetch granular stats for a single post.
+ * @param {string} postId
+ */
 const getStatsForPost = (postId) =>
-  request(`${BASE_URL}/stats/${postId}/0/${Date.now()}`).then((res) => res);
+  request(`/stats/${postId}/0/${Date.now()}`).then((res) => res.value);
 
-const getPostStats = () =>
-  getPosts().then((posts) =>
-    Promise.all(
-      posts.map((post) =>
-        getStatsForPost(post.postId).then((stats) =>
-          aggregatePostStats(stats.value, post)
-        )
-      )
-    )
-  );
+/**
+ * Generating normalized stats for top 100 posts.
+ */
+const generateStats = () =>
+  getPosts()
+    .then(normalizePostStats)
+    .then(sortPostsByViews)
+    .then(appendAdditionalStats);
 
-// aggregation helpers
-const findPostIndex = (stats, timestamp) => {
+/**
+ * Stats are ordered from old to new.
+ * Find the first index less than the given timestamp.
+ * If there is no lesser index, return 0.
+ * @param {Array<PostStat>} stats
+ * @param {number} timestamp
+ */
+const findStartingIndex = (stats, timestamp) => {
   for (let i = 0; i < stats.length; i++) {
     if (stats[i].collectedAt > timestamp) {
       return Math.max(i - 1, 0);
@@ -56,8 +50,13 @@ const findPostIndex = (stats, timestamp) => {
   return stats.length;
 };
 
-const calculateStats = (stats, index) =>
-  stats.slice(index).reduce(
+/**
+ * Aggregate 24hr stats for all posts.
+ * @param {Array<PostStat>} stats
+ */
+const aggregateDailyStats = (stats) => {
+  const index = findStartingIndex(stats, Date.now() - 86400000);
+  return stats.slice(index).reduce(
     (a, c) => {
       a.views += c.views;
       a.upvotes += c.upvotes;
@@ -72,22 +71,31 @@ const calculateStats = (stats, index) =>
       claps: 0,
     }
   );
-
-const aggregatePostStats = (stats, post) => {
-  const dayInMs = 86400000;
-  const now = Date.now();
-  const day = now - dayInMs;
-
-  return {
-    ...post,
-    stats: calculateStats(stats, findPostIndex(stats, day)),
-  };
 };
 
-const processPostStats = (posts) => {
+/**
+ * Aggregate stats for all posts.
+ * @param {Array<Post>} posts
+ */
+const normalizePostStats = (posts) =>
+  Promise.all(
+    posts.map((post) =>
+      getStatsForPost(post.postId).then((stats) => ({
+        postId: post.postId,
+        title: post.title,
+        ...aggregateDailyStats(stats),
+      }))
+    )
+  );
+
+/**
+ * Sort the aggregated posts by number of views.
+ * @param {Array<AggregatedPostStat>} posts
+ */
+const sortPostsByViews = (posts) =>
   posts.sort((a, b) => {
-    const viewsA = a.stats.views;
-    const viewsB = b.stats.views;
+    const viewsA = a.views;
+    const viewsB = b.views;
     if (viewsA < viewsB) {
       return 1;
     }
@@ -97,8 +105,26 @@ const processPostStats = (posts) => {
     return 0;
   });
 
-  return {
-    posts,
-    total: posts.reduce((a, c) => (a += c.stats.views), 0),
-  };
-};
+/**
+ * Add additional stats to the response object before returning.
+ * In this case we're adding total views.
+ * @param {Array<AggregatedPostStat>} posts
+ */
+const appendAdditionalStats = (posts) => ({
+  posts,
+  total: posts.reduce((a, c) => (a += c.views), 0),
+});
+
+/**
+ * event listener for responding to chrome cross-app messages
+ */
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const { type } = request;
+
+  switch (type) {
+    case "GET_POST_STATS":
+      generateStats().then(sendResponse);
+    default:
+      return true;
+  }
+});

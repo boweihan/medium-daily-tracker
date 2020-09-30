@@ -24,10 +24,10 @@ const createParagraphText = (text) => {
 
 const createListMetrics = (post) => {
   const listMetric = document.createElement("div");
-  listMetric.appendChild(createParagraphText("views: " + post.stats.views));
-  listMetric.appendChild(createParagraphText("reads: " + post.stats.reads));
-  listMetric.appendChild(createParagraphText("upvotes: " + post.stats.upvotes));
-  listMetric.appendChild(createParagraphText("claps: " + post.stats.claps));
+  listMetric.appendChild(createParagraphText("views: " + post.views));
+  listMetric.appendChild(createParagraphText("reads: " + post.reads));
+  listMetric.appendChild(createParagraphText("upvotes: " + post.upvotes));
+  listMetric.appendChild(createParagraphText("claps: " + post.claps));
   return listMetric;
 };
 
@@ -47,7 +47,7 @@ const createListBar = (post, total) => {
   const mask = document.createElement("span");
   bar.classList.add("bar");
   mask.classList.add("mask");
-  mask.style.left = `${Math.round((post.stats.views / total) * 100)}%`;
+  mask.style.left = `${Math.round((post.views / total) * 100)}%`;
   mask.style.right = 0;
   bar.appendChild(mask);
   return bar;
